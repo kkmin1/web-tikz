@@ -83,13 +83,28 @@
             <button onclick="triggerFileLoad()" class="px-3 py-1.5 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded flex items-center gap-1 text-sm">
                 <i data-lucide="folder-open" class="w-4 h-4"></i> Load
             </button>
-            <button onclick="saveToFile()" class="px-3 py-1.5 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded flex items-center gap-1 text-sm">
-                <i data-lucide="save" class="w-4 h-4"></i> Save
-            </button>
+            <div class="relative group">
+                <button class="px-3 py-1.5 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded flex items-center gap-1 text-sm">
+                    <i data-lucide="download" class="w-4 h-4"></i> Export
+                </button>
+                <div class="absolute right-0 top-full pt-1 w-32 hidden group-hover:block z-50">
+                    <div class="bg-white border rounded shadow-lg overflow-hidden">
+                        <button onclick="saveToFile()" class="w-full text-left px-4 py-2 text-sm hover:bg-slate-100 flex items-center gap-2">
+                            <i data-lucide="file-json" class="w-4 h-4"></i> .wtikz
+                        </button>
+                        <button onclick="exportAsImage('png')" class="w-full text-left px-4 py-2 text-sm hover:bg-slate-100 flex items-center gap-2">
+                            <i data-lucide="image" class="w-4 h-4"></i> PNG
+                        </button>
+                        <button onclick="exportAsImage('jpg')" class="w-full text-left px-4 py-2 text-sm hover:bg-slate-100 flex items-center gap-2">
+                            <i data-lucide="image" class="w-4 h-4"></i> JPG
+                        </button>
+                    </div>
+                </div>
+            </div>
             <button onclick="copyCode()" class="px-4 py-1.5 bg-indigo-600 text-white hover:bg-indigo-700 rounded flex items-center gap-1 text-sm shadow-sm transition-colors">
                 <i data-lucide="copy" class="w-4 h-4"></i> Copy TikZ
             </button>
-            <input type="file" id="file-input" class="hidden" accept=".json" onchange="loadFromFile(event)">
+            <input type="file" id="file-input" class="hidden" accept=".wtikz,.json,image/png,image/jpeg" onchange="loadFromFile(event)">
         </div>
     </header>
 

@@ -804,8 +804,8 @@ let nodes = [];
             try {
                 if (window.showSaveFilePicker) {
                     const handle = await window.showSaveFilePicker({
-                        suggestedName: `tikz_design_${Date.now()}.json`,
-                        types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }]
+                        suggestedName: `tikz_design_${Date.now()}.wtikz`,
+                        types: [{ description: 'TikZ Design Files', accept: { 'application/wtikz': ['.wtikz'] } }]
                     });
                     const writable = await handle.createWritable();
                     await writable.write(data);
@@ -814,10 +814,10 @@ let nodes = [];
                     let fileName = prompt("파일 이름을 입력하세요 (확장자 제외):", `tikz_design_${Date.now()}`);
                     if (fileName === null) return;
                     if (!fileName.trim()) fileName = `tikz_design_${Date.now()}`;
-                    const blob = new Blob([data], { type: 'application/json' });
+                    const blob = new Blob([data], { type: 'application/wtikz' });
                     const a = document.createElement('a'); 
                     a.href = URL.createObjectURL(blob); 
-                    a.download = `${fileName}.json`; 
+                    a.download = `${fileName}.wtikz`; 
                     a.click();
                 }
             } catch (error) {
@@ -825,12 +825,119 @@ let nodes = [];
             }
         }
 
+        async function exportAsImage(format) {
+            const canvasExp = document.createElement('canvas');
+            canvasExp.width = canvasW;
+            canvasExp.height = canvasH;
+            const ctx = canvasExp.getContext('2d');
+            
+            // 1. Draw Background
+            ctx.fillStyle = (format === 'jpg') ? '#ffffff' : 'transparent';
+            if (format === 'jpg') ctx.fillRect(0, 0, canvasW, canvasH);
+            else ctx.clearRect(0, 0, canvasW, canvasH);
+
+            // 2. Prepare SVG for drawing
+            const styleText = Array.from(document.styleSheets)
+                .filter(s => !s.href || s.href.includes(window.location.origin))
+                .map(s => {
+                    try { return Array.from(s.cssRules).map(r => r.cssText).join('\n'); } catch(e) { return ''; }
+                }).join('\n');
+            
+            const fullSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvasW}" height="${canvasH}">
+                <style>${styleText}</style>
+                ${svgLayer.innerHTML}
+            </svg>`;
+            
+            const blob = new Blob([fullSvg], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const img = new Image();
+
+            img.onload = async () => {
+                // 3. Draw the SVG layer (lines/curves)
+                ctx.drawImage(img, 0, 0);
+                URL.revokeObjectURL(url);
+
+                // 4. Draw Nodes manually to capture them
+                nodes.forEach(n => {
+                    ctx.save();
+                    ctx.globalAlpha = n.opacity / 100;
+                    ctx.strokeStyle = n.color;
+                    ctx.fillStyle = n.fill;
+                    ctx.lineWidth = n.thickness;
+                    
+                    if (n.type === 'circle') {
+                        ctx.beginPath();
+                        ctx.ellipse(n.x + n.width/2, n.y + n.height/2, n.width/2, n.height/2, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.stroke();
+                    } else if (n.type === 'rectangle') {
+                        ctx.fillRect(n.x, n.y, n.width, n.height);
+                        ctx.strokeRect(n.x, n.y, n.width, n.height);
+                    }
+
+                    // Text
+                    ctx.fillStyle = n.textColor;
+                    ctx.font = `${n.fontSize}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(n.text, n.x + n.width/2, n.y + n.height/2);
+                    ctx.restore();
+                });
+
+                // 5. Finalize and Save
+                try {
+                    const mimeType = format === 'jpg' ? 'image/jpeg' : 'image/png';
+                    if (window.showSaveFilePicker) {
+                        const handle = await window.showSaveFilePicker({
+                            suggestedName: `tikz_export_${Date.now()}.${format}`,
+                            types: [{ description: `${format.toUpperCase()} Image`, accept: { [mimeType]: [`.${format}`] } }]
+                        });
+                        const writable = await handle.createWritable();
+                        canvasExp.toBlob(async (b) => {
+                            await writable.write(b);
+                            await writable.close();
+                        }, mimeType);
+                    } else {
+                        const dataUrl = canvasExp.toDataURL(mimeType);
+                        const a = document.createElement('a');
+                        let fn = prompt("파일 이름을 입력하세요:", `tikz_export_${Date.now()}`);
+                        if (fn === null) return;
+                        if (!fn.trim()) fn = `tikz_export_${Date.now()}`;
+                        a.href = dataUrl;
+                        a.download = fn.endsWith('.'+format) ? fn : fn + '.' + format;
+                        a.click();
+                    }
+                } catch (err) {
+                    console.log("Export cancelled or failed:", err);
+                }
+            };
+            img.src = url;
+        }
+
         function triggerFileLoad() { document.getElementById('file-input').click(); }
         function loadFromFile(event) {
             const file = event.target.files[0]; if (!file) return;
             const reader = new FileReader();
-            reader.onload = (e) => { applyState(JSON.parse(e.target.result)); saveHistory(); };
-            reader.readAsText(file);
+            if (file.name.endsWith('.wtikz') || file.name.endsWith('.json')) {
+                reader.onload = (e) => { 
+                    try {
+                        applyState(JSON.parse(e.target.result)); 
+                        saveHistory(); 
+                    } catch(err) {
+                        alert("Invalid file format.");
+                    }
+                };
+                reader.readAsText(file);
+            } else if (file.type.startsWith('image/')) {
+                reader.onload = (e) => {
+                    canvas.style.backgroundImage = `url(${e.target.result})`;
+                    canvas.style.backgroundSize = 'contain';
+                    canvas.style.backgroundRepeat = 'no-repeat';
+                    canvas.style.backgroundPosition = 'center';
+                    alert("Image loaded as background for tracing.");
+                };
+                reader.readAsDataURL(file);
+            }
         }
 
         function copyCode() {

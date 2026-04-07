@@ -1,0 +1,62 @@
+{
+  "nodes": [
+    {
+      "id": "node-1775528406303",
+      "type": "rectangle",
+      "x": 176.68000030517578,
+      "y": 179.36000061035156,
+      "width": 137,
+      "height": 72,
+      "text": "Node",
+      "color": "#64748b",
+      "fill": "#ffffff",
+      "opacity": 100,
+      "textColor": "#000000",
+      "fontSize": 14,
+      "thickness": 1,
+      "lineStyle": "solid"
+    },
+    {
+      "id": "node-1775528409288",
+      "type": "circle",
+      "x": 251.68000030517578,
+      "y": 139.36000061035156,
+      "width": 92,
+      "height": 77,
+      "text": "Node",
+      "color": "#64748b",
+      "fill": "#ffffff",
+      "opacity": 50,
+      "textColor": "#000000",
+      "fontSize": 14,
+      "thickness": 1,
+      "lineStyle": "solid"
+    }
+  ],
+  "edges": [],
+  "beziers": [
+    {
+      "id": "bezier-1775528421828",
+      "x1": 348.6800003051758,
+      "y1": 136.36000061035156,
+      "x2": 589.6800003051758,
+      "y2": 331.36000061035156,
+      "cp1x": 315.6800003051758,
+      "cp1y": 372.36000061035156,
+      "cp2x": 584.6800003051758,
+      "cp2y": 168.36000061035156,
+      "color": "#64748b",
+      "thickness": 2,
+      "style": "solid",
+      "arrow": true,
+      "arrowCount": 1,
+      "arrowMode": "forward",
+      "arrowFlipPoints": "0.5"
+    }
+  ],
+  "quadratics": [],
+  "quartics": [],
+  "plots": [],
+  "canvasW": 800,
+  "canvasH": 600
+}
