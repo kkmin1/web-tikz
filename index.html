@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced TikZ Visual Editor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons 라이브러리 로드 -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']]
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header class="bg-white border-b p-3 flex justify-between items-center shadow-sm z-30">
+        <div class="flex items-center gap-4">
+            <h1 class="text-lg font-bold text-slate-800 mr-2">TikZ Studio</h1>
+            <div class="flex gap-1 bg-slate-100 p-1 rounded-lg">
+                <button id="tool-select" onclick="setTool('select')" class="p-2 rounded hover:bg-white hover:shadow-sm transition-all active-tool icon-container" title="Select">
+                    <i data-lucide="mouse-pointer-2" class="w-4 h-4"></i>
+                </button>
+                <button id="tool-circle" onclick="setTool('circle')" class="p-2 rounded hover:bg-white hover:shadow-sm transition-all icon-container" title="Circle">
+                    <i data-lucide="circle" class="w-4 h-4"></i>
+                </button>
+                <button id="tool-rectangle" onclick="setTool('rectangle')" class="p-2 rounded hover:bg-white hover:shadow-sm transition-all icon-container" title="Rectangle">
+                    <i data-lucide="square" class="w-4 h-4"></i>
+                </button>
+                <button id="tool-line" onclick="setTool('line')" class="p-2 rounded hover:bg-white hover:shadow-sm transition-all icon-container" title="Line">
+                    <i data-lucide="move-up-right" class="w-4 h-4"></i>
+                </button>
+                <button id="tool-bezier" onclick="setTool('bezier')" class="p-2 rounded hover:bg-white hover:shadow-sm transition-all icon-container" title="Cubic Bezier Curve">
+                    <i data-lucide="spline" class="w-4 h-4"></i>
+                </button>
+                <button id="tool-quad" onclick="setTool('quad')" class="p-2 rounded hover:bg-white hover:shadow-sm transition-all icon-container" title="Quadratic Bezier Curve (3 points)">
+                    <i data-lucide="rainbow" class="w-4 h-4"></i>
+                </button>
+                <button id="tool-quartic" onclick="setTool('quartic')" class="p-2 rounded hover:bg-white hover:shadow-sm transition-all icon-container" title="Quartic Bezier Curve (5 points)">
+                    <i data-lucide="waves" class="w-4 h-4"></i>
+                </button>
+                <button id="tool-plot" onclick="setTool('plot')" class="p-2 rounded hover:bg-white hover:shadow-sm transition-all icon-container" title="Function Plot">
+                    <i data-lucide="activity" class="w-4 h-4"></i>
+                </button>
+                <button id="tool-eraser" onclick="setTool('eraser')" class="p-2 rounded hover:bg-white hover:shadow-sm transition-all text-red-500 icon-container" title="Eraser Area">
+                    <i data-lucide="eraser" class="w-4 h-4"></i>
+                </button>
+            </div>
+            
+            <div class="h-6 w-px bg-slate-300 mx-1"></div>
+            
+            <div class="flex items-center gap-2 text-xs font-medium text-slate-500">
+                <span>Size:</span>
+                <input type="number" id="canvas-w" value="800" step="50" onchange="resizeCanvas()" class="w-16 px-2 py-1 border rounded outline-none focus:border-blue-500">
+                <span>×</span>
+                <input type="number" id="canvas-h" value="600" step="50" onchange="resizeCanvas()" class="w-16 px-2 py-1 border rounded outline-none focus:border-blue-500">
+            </div>
+
+            <div class="h-6 w-px bg-slate-300 mx-1"></div>
+            
+            <div class="flex gap-1">
+                <button onclick="undo()" class="p-2 rounded hover:bg-slate-100 icon-container" title="Undo">
+                    <i data-lucide="undo-2" class="w-4 h-4"></i>
+                </button>
+                <button onclick="redo()" class="p-2 rounded hover:bg-slate-100 icon-container" title="Redo">
+                    <i data-lucide="redo-2" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="flex gap-2">
+            <a href="readme.html" class="px-3 py-1.5 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded flex items-center gap-1 text-sm">
+                <i data-lucide="help-circle" class="w-4 h-4"></i> Manual
+            </a>
+            <button onclick="triggerFileLoad()" class="px-3 py-1.5 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded flex items-center gap-1 text-sm">
+                <i data-lucide="folder-open" class="w-4 h-4"></i> Load
+            </button>
+            <button onclick="saveToFile()" class="px-3 py-1.5 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded flex items-center gap-1 text-sm">
+                <i data-lucide="save" class="w-4 h-4"></i> Save
+            </button>
+            <button onclick="copyCode()" class="px-4 py-1.5 bg-indigo-600 text-white hover:bg-indigo-700 rounded flex items-center gap-1 text-sm shadow-sm transition-colors">
+                <i data-lucide="copy" class="w-4 h-4"></i> Copy TikZ
+            </button>
+            <input type="file" id="file-input" class="hidden" accept=".json" onchange="loadFromFile(event)">
+        </div>
+    </header>
+
+    <main class="flex flex-1 overflow-hidden">
+        <div id="canvas-container" class="bg-slate-50">
+            <div id="canvas" style="width: 800px; height: 600px;">
+                <svg id="svg-layer"></svg>
+                <div id="guide-box"></div>
+                <div id="guide-line"></div>
+                <div id="erase-box"></div>
+            </div>
+        </div>
+
+        <aside class="w-80 border-l bg-white flex flex-col shadow-lg z-20">
+            <div class="p-4 border-b flex-shrink-0">
+                <h2 class="font-bold text-slate-700 flex items-center gap-2 mb-4">
+                    <i data-lucide="settings-2" class="w-4 h-4"></i> Properties
+                </h2>
+                <div id="properties-panel" class="space-y-4 text-sm text-slate-600 max-h-[50vh] overflow-y-auto pr-1">
+                    <div class="text-center py-10 text-slate-400 italic">Select an object to edit properties</div>
+                </div>
+            </div>
+            <div id="code-panel" class="flex-1 p-4 overflow-auto relative border-t">
+                <div class="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-2">TikZ Code</div>
+                <pre id="tikz-output" class="text-xs leading-relaxed whitespace-pre-wrap"></pre>
+            </div>
+        </aside>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
