@@ -55,6 +55,11 @@ window.wtikz = {
         }
 
         function dist(x1, y1, x2, y2) { return Math.sqrt(Math.pow(x2-x1, 2) + Math.pow(y2-y1, 2)); }
+        function setNodeText(el, text) {
+            const span = document.createElement('span');
+            span.textContent = text ?? '';
+            el.replaceChildren(span);
+        }
 
         // Render Edges (Lines)
         edges.forEach(edge => {
@@ -153,8 +158,10 @@ window.wtikz = {
         // Nodes
         nodes.forEach(n => {
             const div = document.createElement('div');
-            div.style.cssText = `position:absolute;left:${n.x}px;top:${n.y}px;width:${n.width}px;height:${n.height}px;border-radius:${n.type==='circle'?'50%':'2px'};border:${n.thickness}px ${n.lineStyle} ${n.color};background-color:${n.fill};opacity:${n.opacity/100};color:${n.textColor};font-size:${n.fontSize}px;display:flex;align-items:center;justify-content:center;`;
-            div.innerHTML = `<span>${n.text}</span>`;
+            const isText = n.type === 'text';
+            div.className = isText ? 'text-node' : '';
+            div.style.cssText = `position:absolute;left:${n.x}px;top:${n.y}px;width:${n.width}px;height:${n.height}px;border-radius:${n.type==='circle'?'50%':'2px'};border:${isText ? 'none' : `${n.thickness}px ${n.lineStyle} ${n.color}`};background-color:${isText ? 'transparent' : n.fill};opacity:${n.opacity/100};color:${n.textColor};font-size:${n.fontSize}px;display:flex;align-items:center;justify-content:center;white-space:pre;overflow:visible;`;
+            setNodeText(div, n.text);
             container.appendChild(div);
         });
 

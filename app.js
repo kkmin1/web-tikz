@@ -28,6 +28,24 @@ let nodes = [];
         const output = document.getElementById('tikz-output');
         const propsPanel = document.getElementById('properties-panel');
 
+        function escapeTex(text) {
+            return String(text ?? '')
+                .replace(/\\/g, '\\textbackslash{}')
+                .replace(/\{/g, '\\{')
+                .replace(/\}/g, '\\}')
+                .replace(/#/g, '\\#')
+                .replace(/\$/g, '\\$')
+                .replace(/%/g, '\\%')
+                .replace(/&/g, '\\&')
+                .replace(/_/g, '\\_');
+        }
+
+        function setNodeText(el, text) {
+            const span = document.createElement('span');
+            span.textContent = text ?? '';
+            el.replaceChildren(span);
+        }
+
         function resizeCanvas() {
             canvasW = parseInt(document.getElementById('canvas-w').value) || 800;
             canvasH = parseInt(document.getElementById('canvas-h').value) || 600;
@@ -600,9 +618,10 @@ let nodes = [];
             nodes.forEach(n => {
                 const div = document.createElement('div');
                 div.id = n.id;
-                div.className = `node-element ${selectedId === n.id ? 'selected' : ''}`;
-                div.style.cssText = `left:${n.x}px;top:${n.y}px;width:${n.width}px;height:${n.height}px;border-radius:${n.type==='circle'?'50%':'2px'};border:${n.thickness}px ${n.lineStyle} ${n.color};background-color:${n.fill};opacity:${n.opacity/100};color:${n.textColor};font-size:${n.fontSize}px;`;
-                div.innerHTML = `<span>${n.text}</span>`;
+                const isText = n.type === 'text';
+                div.className = `node-element ${isText ? 'text-node' : ''} ${selectedId === n.id ? 'selected' : ''}`;
+                div.style.cssText = `left:${n.x}px;top:${n.y}px;width:${n.width}px;height:${n.height}px;border-radius:${n.type==='circle'?'50%':'2px'};border:${isText ? 'none' : `${n.thickness}px ${n.lineStyle} ${n.color}`};background-color:${isText ? 'transparent' : n.fill};opacity:${n.opacity/100};color:${n.textColor};font-size:${n.fontSize}px;white-space:pre;overflow:visible;`;
+                setNodeText(div, n.text);
                 canvas.appendChild(div);
                 if (selectedId === n.id) { createHandle(n.x, n.y, 'tl'); createHandle(n.x+n.width, n.y+n.height, 'br'); }
             });
@@ -714,8 +733,14 @@ let nodes = [];
             }
             code += `\\begin{tikzpicture}\n`;
             nodes.forEach(n => {
-                const tx = (n.x / 40).toFixed(2), ty = ((canvasH - n.y) / 40).toFixed(2);
-                code += `  \\node[draw=${n.color}, fill=${n.fill}, ${n.type}, minimum width=${(n.width/40).toFixed(2)}cm, minimum height=${(n.height/40).toFixed(2)}cm, text=${n.textColor}, font=\\fontsize{${n.fontSize}}{${n.fontSize+2}}\\selectfont${n.opacity<100?', opacity='+(n.opacity/100):''}${n.lineStyle!=='solid'?', '+n.lineStyle:''}] at (${tx}, ${ty}) {${n.text}};\n`;
+                const centerX = ((n.x + n.width / 2) / 40).toFixed(2);
+                const centerY = ((canvasH - (n.y + n.height / 2)) / 40).toFixed(2);
+                const text = escapeTex(n.text);
+                if (n.type === 'text') {
+                    code += `  \\node[text=${n.textColor}, font=\\fontsize{${n.fontSize}}{${n.fontSize+2}}\\selectfont${n.opacity<100?', opacity='+(n.opacity/100):''}] at (${centerX}, ${centerY}) {${text}};\n`;
+                } else {
+                    code += `  \\node[draw=${n.color}, fill=${n.fill}, ${n.type}, minimum width=${(n.width/40).toFixed(2)}cm, minimum height=${(n.height/40).toFixed(2)}cm, text=${n.textColor}, font=\\fontsize{${n.fontSize}}{${n.fontSize+2}}\\selectfont${n.opacity<100?', opacity='+(n.opacity/100):''}${n.lineStyle!=='solid'?', '+n.lineStyle:''}] at (${centerX}, ${centerY}) {${text}};\n`;
+                }
             });
             edges.forEach(e => {
                 const x1 = (e.x1 / 40).toFixed(2), y1 = ((canvasH - e.y1) / 40).toFixed(2), x2 = (e.x2 / 40).toFixed(2), y2 = ((canvasH - e.y2) / 40).toFixed(2);
@@ -796,7 +821,7 @@ let nodes = [];
                 code += `  \\end{scope}\n`;
             });
             code += `\\end{tikzpicture}`;
-            output.innerText = code;
+            output.value = code;
         }
 
         async function saveToFile() {
@@ -941,7 +966,7 @@ let nodes = [];
         }
 
         function copyCode() {
-            const el = document.createElement('textarea'); el.value = output.innerText; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
+            const el = document.createElement('textarea'); el.value = output.value; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
         }
 
         window.addEventListener('keydown', (e) => {
